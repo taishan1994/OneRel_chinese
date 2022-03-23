@@ -1,6 +1,7 @@
 # OneRel_chinese
 OneRel在中文关系抽取中的使用。使用的数据集是百度关系抽取数据集DUIE。中文预训练模型是bert-base-chinese。数据和训练好的模型下载：<br>
-
+链接：https://pan.baidu.com/s/1vyDIqCspTIaGOj5tSGlCJg<br>
+提取码：uccp
 # 依赖
 ```
 keras_bert==0.88.0
