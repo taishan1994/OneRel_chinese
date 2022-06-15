@@ -10,6 +10,7 @@ numpy==1.19.2
 scikit_learn==1.0.1
 torch==1.8.1+cu111
 transformers==4.5.1
+tensorflow==1.15.0
 ```
 
 # 说明
