@@ -7,7 +7,7 @@ OneRel在中文关系抽取中的使用。使用的数据集是百度关系抽�
 keras_bert==0.88.0
 matplotlib==3.3.2
 numpy==1.19.2
-scikit_learn==1.0.1
+scikit-learn==1.0.1
 torch==1.8.1+cu111
 transformers==4.5.1
 tensorflow==1.15.0
