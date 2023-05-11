@@ -14,7 +14,7 @@ tensorflow==1.15.0
 ```
 
 # 说明
-基于原始论文《OneRel: Joint Entity and Relation Extraction with One Module in One Step》的代码：https://github.com/ssnvxia/OneRel 进行的修改，主要变动的地方如下：
+基于原始论文《OneRel: Joint Entity and Relation Extraction with One Module in One Step》的代码：~~https://github.com/ssnvxia/OneRel~~ https://github.com/China-ChallengeHub/OneRel 进行的修改，主要变动的地方如下：
 - utils/tokenizer.py：里面修改为针对于中文的token化。
 - framework/framework.py：里面test时解码去除掉token化时添加的空格。在re_collate_fn函数里面```batch_triple_matrix = torch.LongTensor(cur_batch_len, 48, ax_text_len, max_text_len).zero_()```需要修改为关系的数目。
 - process.py：新增的数据处理文件，主要将duie的数据转换为onerel所需要的格式。
