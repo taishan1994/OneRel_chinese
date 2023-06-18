@@ -2,39 +2,16 @@ from torch.utils.data import DataLoader, Dataset
 import json
 import os
 import torch
+from utils import get_tokenizer
+from utils.tokenization import BasicTokenizer
 import numpy as np
 from random import choice
 from transformers import BertTokenizer
 
-# from utils import get_tokenizer
-# from utils.tokenization import BasicTokenizer
-# tokenizer = get_tokenizer('pre_trained_bert/vocab.txt')
-# basicTokenizer = BasicTokenizer(do_lower_case=False)
-# tag_file = 'data/tag.txt'
-
-class ZhTokenizer:
-    def __init__(self):
-        self.tokenizer = BertTokenizer.from_pretrained('pre_trained_bert/chinese-bert-wwm-ext/vocab.txt')
-        self.vocab2id = self.tokenizer.vocab
-
-    def tokenize(self, text):
-        tokens = self.tokenizer.tokenize(text)
-        return_tokens = ["[CLS]"]
-        for token in tokens:
-            return_tokens.append(token)
-            return_tokens.append("[unused1]")
-        return_tokens += ["[SEP]"]
-        return return_tokens
-
-    def encode(self, text):
-        return_tokens = self.tokenize(text)
-        input_ids = [int(self.vocab2id.get(token, 100)) for token in return_tokens]
-        attention_mask = [1] * len(input_ids)
-        return input_ids, attention_mask
-
-
-tokenizer = ZhTokenizer()
-
+tokenizer = get_tokenizer('pre_trained_bert/vocab.txt')
+# tokenizer = BertTokenizer.from_pretrained('pre_trained_bert/vocab.txt')
+basicTokenizer = BasicTokenizer(do_lower_case=False)
+tag_file = 'data/tag.txt'
 
 def find_head_idx(source, target):
     target_len = len(target)
@@ -42,7 +19,6 @@ def find_head_idx(source, target):
         if source[i: i + target_len] == target:
             return i
     return -1
-
 
 class REDataset(Dataset):
     def __init__(self, config, prefix, is_test, tokenizer):
@@ -52,11 +28,9 @@ class REDataset(Dataset):
         self.tokenizer = tokenizer
 
         if self.config.debug:
-            self.json_data = json.load(open(os.path.join(self.config.data_path, prefix + '.json')))[:2]
+            self.json_data = json.load(open(os.path.join(self.config.data_path, prefix + '.json')))[:12]
         else:
             self.json_data = json.load(open(os.path.join(self.config.data_path, prefix + '.json')))
-        if self.is_test:
-            self.json_data = self.json_data[:1000]
         self.rel2id = json.load(open(os.path.join(self.config.data_path, 'rel2id.json')))[1]
         self.tag2id = json.load(open('data/tag2id.json'))[1]
 
@@ -73,26 +47,23 @@ class REDataset(Dataset):
         if len(tokens) > self.config.bert_max_len:
             tokens = tokens[: self.config.bert_max_len]
         text_len = len(tokens)
+
         if not self.is_test:
             s2ro_map = {}
             for triple in ins_json_data['triple_list']:
                 triple = (self.tokenizer.tokenize(triple[0])[1:-1],
-                          triple[1], self.tokenizer.tokenize(triple[2])[1:-1])
-                # print(triple)
+                         triple[1], self.tokenizer.tokenize(triple[2])[1:-1])
                 # print(tokens, triple[0])
                 # print(tokens, triple[2])
                 sub_head_idx = find_head_idx(tokens, triple[0])
                 obj_head_idx = find_head_idx(tokens, triple[2])
-                # print(tokens)
-                # print(triple)
-                # print(sub_head_idx, obj_head_idx)
                 if sub_head_idx != -1 and obj_head_idx != -1:
                     sub = (sub_head_idx, sub_head_idx + len(triple[0]) - 1)
                     if sub not in s2ro_map:
                         s2ro_map[sub] = []
                     s2ro_map[sub].append((obj_head_idx, obj_head_idx + len(triple[2]) - 1, self.rel2id[triple[1]]))
             if s2ro_map:
-                token_ids, segment_ids = self.tokenizer.encode(text)
+                token_ids, segment_ids = self.tokenizer.encode(first=text)
                 masks = segment_ids
                 if len(token_ids) > text_len:
                     token_ids = token_ids[:text_len]
@@ -110,14 +81,14 @@ class REDataset(Dataset):
                         triple_matrix[relation][sub_head][obj_head] = self.tag2id['HB-TB']
                         triple_matrix[relation][sub_head][obj_tail] = self.tag2id['HB-TE']
                         triple_matrix[relation][sub_tail][obj_tail] = self.tag2id['HE-TE']
-
+                
                 return token_ids, masks, loss_masks, text_len, triple_matrix, ins_json_data['triple_list'], tokens
             else:
                 print(ins_json_data)
                 return None
 
         else:
-            token_ids, masks = self.tokenizer.encode(text)
+            token_ids, masks = self.tokenizer.encode(first=text)
             if len(token_ids) > text_len:
                 token_ids = token_ids[:text_len]
                 masks = masks[:text_len]
@@ -128,11 +99,10 @@ class REDataset(Dataset):
             triple_matrix = np.zeros((self.config.rel_num, text_len, text_len))
             return token_ids, masks, loss_masks, text_len, triple_matrix, ins_json_data['triple_list'], tokens
 
-
 def re_collate_fn(batch):
     batch = list(filter(lambda x: x is not None, batch))
     batch.sort(key=lambda x: x[3], reverse=True)
-
+    
     token_ids, masks, loss_masks, text_len, triple_matrix, triples, tokens = zip(*batch)
     cur_batch_len = len(batch)
     max_text_len = max(text_len)
@@ -157,7 +127,6 @@ def re_collate_fn(batch):
             'triples': triples,
             'tokens': tokens}
 
-
 def get_loader(config, prefix, is_test=False, num_workers=0, collate_fn=re_collate_fn):
     dataset = REDataset(config, prefix, is_test, tokenizer)
     if not is_test:
@@ -175,7 +144,6 @@ def get_loader(config, prefix, is_test=False, num_workers=0, collate_fn=re_colla
                                  num_workers=num_workers,
                                  collate_fn=collate_fn)
     return data_loader
-
 
 class DataPreFetcher(object):
     def __init__(self, loader):
