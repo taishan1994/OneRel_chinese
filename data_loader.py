@@ -99,7 +99,8 @@ class REDataset(Dataset):
                     masks = masks[:text_len]
                 mask_length = len(masks)
                 token_ids = np.array(token_ids)
-                masks = np.array(masks) + 1
+                # masks = np.array(masks) + 1
+                masks = np.array(masks)
                 loss_masks = np.ones((mask_length, mask_length))
                 triple_matrix = np.zeros((self.config.rel_num, text_len, text_len))
                 for s in s2ro_map:
