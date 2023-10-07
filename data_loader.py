@@ -123,9 +123,11 @@ class REDataset(Dataset):
                 token_ids = token_ids[:text_len]
                 masks = masks[:text_len]
             token_ids = np.array(token_ids)
-            masks = np.array(masks) + 1
+            # masks = np.array(masks) + 1
+            masks = np-.array(masks)
             mask_length = len(masks)
-            loss_masks = np.array(masks) + 1
+            # loss_masks = np.array(masks) + 1
+            loss_masks = np.array(masks)
             triple_matrix = np.zeros((self.config.rel_num, text_len, text_len))
             return token_ids, masks, loss_masks, text_len, triple_matrix, ins_json_data['triple_list'], tokens
 
